@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isAdmin() { return signedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'; }
+    function isOwner(userId) { return signedIn() && request.auth.uid == userId; }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && request.resource.data.role == 'guest';
+      allow update: if isOwner(userId) && request.resource.data.role == resource.data.role;
+      allow update, delete: if isAdmin();
+    }
+    match /galleryPosts/{postId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+    // Los invitados deben confirmar su correo antes de comentar, dar like o consultar eventos.
+    match /galleryLikes/{likeId} { allow create: if signedIn() && request.resource.data.userId == request.auth.uid && likeId == request.resource.data.postId + '_' + request.auth.uid; allow read: if signedIn(); }
+    match /galleryComments/{commentId} { allow read: if true; allow create: if signedIn(); allow update, delete: if isAdmin(); }
+    match /eventQuestions/{questionId} { allow create: if signedIn() && request.auth.token.email_verified == true; allow read, update, delete: if isAdmin(); }
+    // Acceso temporal: hasta integrar SMS, el correo verificado en Firebase
+    // funciona como segunda comprobación de identidad para los jugadores.
+    match /savings/{document=**} {
+      allow read: if isAdmin() || (signedIn() && request.auth.token.email_verified == true && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'player');
+      allow write: if isAdmin();
+    }
+    match /savingsAccessRequests/{requestId} { allow create: if signedIn() && request.resource.data.userId == request.auth.uid; allow read, update: if isAdmin(); }
+    match /playerInvites/{inviteId} { allow create, read, update, delete: if isAdmin(); }
+    match /communications/{noticeId} { allow read: if signedIn(); allow create, update, delete: if isAdmin(); }
+    match /agendaItems/{itemId} { allow read: if true; allow create, update, delete: if isAdmin(); }
+    match /pastCompetitions/{itemId} { allow read: if true; allow create, update, delete: if isAdmin(); }
+    match /attendance/{sessionId} { allow read: if signedIn(); allow create, update, delete: if isAdmin(); }
+    match /rosterPlayers/{playerId} { allow read: if signedIn(); allow create, update, delete: if isAdmin(); }
+    match /clubContent/{contentId} { allow read: if true; allow create, update, delete: if isAdmin(); }
+  }
+}

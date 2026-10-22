@@ -1,0 +1,461 @@
+.access-btn,
+.button {
+    border-radius: 12px;
+    padding: 13px 20px;
+    box-shadow: 0 4px 11px #061a3620;
+    transition: transform .16s, box-shadow .16s
+}
+
+.access-btn:hover,
+.button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 7px 15px #061a3630
+}
+
+.savings-panel {
+    padding: 17px 28px;
+    min-height: 0
+}
+
+.savings-panel h3 {
+    margin: .05em 0;
+    font-size: 2.4rem
+}
+
+input,
+textarea,
+select {
+    border-radius: 8px
+}
+
+.floating-player-button {
+    position: fixed;
+    right: 28px;
+    bottom: 28px;
+    z-index: 30;
+    border: 0;
+    border-radius: 999px;
+    background: #58d3ef;
+    color: #061a36;
+    padding: 15px 19px;
+    font: 800 13px "DM Sans", sans-serif;
+    box-shadow: 0 10px 24px #0004;
+    cursor: pointer
+}
+
+.floating-player-button span {
+    margin-left: 6px
+}
+
+.like {
+    border-radius: 999px;
+    background: #f2f8fa;
+    padding: 5px 9px
+}
+
+.photo-comments {
+    padding: 0 16px 15px
+}
+
+.photo-comments [data-comment-list] {
+    display: grid;
+    gap: 6px
+}
+
+.photo-comments article {
+    background: #f2f8fa;
+    border-radius: 8px;
+    padding: 7px 9px;
+    font-size: 12px
+}
+
+.photo-comments article p {
+    padding: 0;
+    margin: 0
+}
+
+.photo-comments form {
+    display: flex;
+    gap: 6px;
+    margin-top: 9px
+}
+
+.photo-comments textarea {
+    min-height: 38px;
+    padding: 8px;
+    font-size: 12px
+}
+
+.comment-send {
+    border: 0;
+    border-radius: 9px;
+    background: #58d3ef;
+    padding: 0 11px;
+    font-weight: 700;
+    cursor: pointer
+}
+
+.large-avatar.has-photo {
+    background-size: cover;
+    background-position: center;
+    color: transparent
+}
+
+.attendance-pager {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    margin-bottom: 22px
+}
+
+.attendance-pager button {
+    border: 0;
+    border-radius: 999px;
+    background: #e8f4f7;
+    padding: 9px 14px;
+    font-weight: 700;
+    cursor: pointer
+}
+
+.attendance-pager button:disabled {
+    opacity: .4;
+    cursor: default
+}
+
+.player-card-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    place-items: center;
+    background: #061a36a8;
+    padding: 20px
+}
+
+.player-card-backdrop.open {
+    display: grid
+}
+
+.player-card {
+    position: relative;
+    width: min(440px, 100%);
+    padding: 35px;
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 18px 60px #0007
+}
+
+.player-card h2 {
+    font-size: 3rem
+}
+
+.player-card>p:not(.eyebrow) {
+    color: #627485;
+    margin-bottom: 24px
+}
+
+.player-card-icon {
+    width: 52px;
+    height: 52px;
+    display: grid;
+    place-items: center;
+    border-radius: 16px;
+    background: #58d3ef;
+    color: #061a36;
+    font-size: 30px;
+    font-weight: 700;
+    margin-bottom: 18px
+}
+
+.player-card-close {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    border: 0;
+    background: transparent;
+    font-size: 26px;
+    cursor: pointer;
+    color: #42566b
+}
+
+.player-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 9px;
+    margin-top: 12px
+}
+
+.cancel-player-card {
+    background: #edf3f5;
+    color: #29435b
+}
+
+.gallery-item {
+    transition: background .18s, border-color .18s
+}
+
+.gallery-item:hover {
+    background: #f0fbfe;
+    border-color: #58d3ef
+}
+
+.gallery-item:hover .like {
+    background: #d6f5fb;
+    color: #007cae
+}
+
+.gallery-item h3,
+.gallery-item p,
+.gallery-caption span,
+.profile-card h2,
+.profile-card p {
+    overflow-wrap: anywhere;
+    word-break: break-word
+}
+
+.profile-card {
+    min-width: 0
+}
+
+.cancel-debt-card {
+    background: #edf3f5;
+    color: #29435b
+}
+
+.user-player-card {
+    width: min(520px, 100%)
+}
+
+.cancel-user-player-card {
+    background: #edf3f5;
+    color: #29435b
+}
+
+.attendance-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 310px;
+    gap: 18px;
+    align-items: start
+}
+
+.attendance-split .attendance-list {
+    margin: 0
+}
+
+.debt-panel {
+    background: #effaff;
+    border-top: 4px solid #58d3ef;
+    padding: 24px;
+    box-shadow: 0 5px 18px #061a3614
+}
+
+.debt-panel h3 {
+    font-size: 2.2rem
+}
+
+.debt-panel-copy {
+    font-size: 13px;
+    color: #5f7181;
+    margin: 0 0 17px
+}
+
+.debt-items {
+    display: grid;
+    gap: 10px
+}
+
+.debt-item {
+    display: grid;
+    gap: 7px;
+    border: 1px solid #c9e4eb;
+    background: #fff;
+    border-radius: 12px;
+    padding: 13px
+}
+
+.debt-item b {
+    font-size: 14px;
+    overflow-wrap: anywhere
+}
+
+.debt-item span,
+.debt-item small {
+    font-size: 11px;
+    color: #617185
+}
+
+.debt-item strong {
+    color: #ba5512;
+    font-size: 16px
+}
+
+.debt-update-form label {
+    gap: 4px;
+    font-size: 10px;
+    color: #4e6678
+}
+
+.debt-update-form input,
+.debt-update-form select {
+    padding: 8px;
+    font-size: 12px
+}
+
+.debt-update-form .button {
+    padding: 9px 12px;
+    font-size: 11px
+}
+
+.empty-debts {
+    margin: 0;
+    border-radius: 10px;
+    background: #fff;
+    padding: 14px;
+    font-size: 13px;
+    color: #407084
+}
+
+@media(max-width:900px) {
+    .attendance-split {
+        grid-template-columns: 1fr
+    }
+
+    .debt-panel {
+        order: -1
+    }
+}
+
+.admin-savings-current {
+    margin: 0;
+    color: #5c7180;
+    font-size: 12px
+}
+
+.admin-savings-current strong {
+    display: block;
+    color: #087fae;
+    font: 800 2rem "Barlow Condensed", sans-serif;
+    letter-spacing: .03em;
+    margin-top: 3px
+}
+
+.event-card.dark [data-upcoming-label] {
+    display: inline-flex;
+    align-items: center;
+    background: #d9f96d;
+    color: #061a36;
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-size: 10px;
+    letter-spacing: .14em;
+    font-weight: 900;
+    margin: 0 0 12px
+}
+
+.event-card.dark [data-upcoming-label][hidden] {
+    display: none
+}
+
+.gallery-empty {
+    grid-column: 1/-1;
+    margin: 0;
+    background: #f2f8fa;
+    border: 1px dashed #a9c9d5;
+    border-radius: 12px;
+    padding: 32px;
+    text-align: center;
+    color: #526b7d
+}
+
+.admin-edit-card {
+    width: min(590px, 100%);
+    max-height: calc(100vh - 40px);
+    overflow: auto;
+    border-top: 5px solid #58d3ef
+}
+
+.admin-edit-card h2 {
+    font-size: 3.2rem
+}
+
+.admin-edit-card #admin-edit-fields {
+    display: grid;
+    gap: 13px
+}
+
+.admin-edit-card label {
+    color: #29465e
+}
+
+.admin-edit-card input,
+.admin-edit-card textarea {
+    background: #f8fcfd;
+    border-color: #c7dce4
+}
+
+.admin-edit-card textarea {
+    min-height: 110px
+}
+
+.admin-edit-card .player-card-actions {
+    position: sticky;
+    bottom: -35px;
+    background: #fff;
+    padding: 16px 0 0;
+    margin-bottom: -4px
+}
+
+.competition-image-wrap {
+    display: grid;
+    place-items: center
+}
+
+.competition-image-wrap img {
+    width: min(100%, 430px);
+    max-height: 500px;
+    object-fit: cover;
+    border-radius: 16px;
+    box-shadow: 0 18px 35px #0006
+}
+
+.competition-date {
+    font: 800 1rem "DM Sans", sans-serif;
+    letter-spacing: .08em;
+    color: #58d3ef;
+    margin: 0 0 12px
+}
+
+.attendance-split.athlete-attendance {
+    grid-template-columns: minmax(0, 1fr)
+}
+
+.ticker {
+    height: 58px;
+    display: flex;
+    align-items: center;
+    padding: 0
+}
+
+.ticker div {
+    width: max-content;
+    margin: auto;
+    will-change: transform;
+    animation: dragons-ticker 10s ease-in-out infinite alternate
+}
+
+@keyframes dragons-ticker {
+    from {
+        transform: translateX(-12%)
+    }
+
+    to {
+        transform: translateX(12%)
+    }
+}
+
+@media(prefers-reduced-motion:reduce) {
+    .ticker div {
+        animation: none
+    }
+}
