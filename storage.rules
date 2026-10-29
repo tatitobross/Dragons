@@ -5,5 +5,11 @@ service firebase.storage {
     function isAdmin() { return signedIn() && firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'admin'; }
     match /profile-images/{userId}/{fileName} { allow read: if true; allow write: if signedIn() && request.auth.uid == userId && request.resource.size < 5 * 1024 * 1024 && request.resource.contentType.matches('image/.*'); }
     match /gallery/{fileName} { allow read: if true; allow write: if isAdmin() && request.resource.size < 25 * 1024 * 1024; }
+    match /competitions/{fileName} {
+      allow read: if true;
+      allow create, update: if isAdmin()
+        && request.resource.size <= 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+    }
   }
 }

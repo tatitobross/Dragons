@@ -9,7 +9,13 @@
     <div class="admin-tools">
         <form id="savings-form">
             <p class="tag">AHORROS</p>
-            <p class="admin-savings-current">Saldo publicado <strong data-admin-savings-value>L 18,450.00</strong></p><label>Monto total (L)<input name="amount" required type="number" min="0" step="0.01" placeholder="Ej. 18450.00"></label><button class="button primary">Actualizar ahorro →</button>
+            <p class="admin-savings-current">Saldo disponible <strong data-admin-savings-value>Cargando…</strong></p>
+            <p class="savings-form-copy">Suma los aportes al saldo o resta lo que se gaste en equipo y otras necesidades del club.</p>
+            <label>Tipo de movimiento<select name="type" required><option value="income">Sumar aporte (+)</option><option value="expense">Restar gasto (−)</option></select></label>
+            <label>Monto del movimiento (L)<input name="amount" required type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="Ej. 250.00"></label>
+            <label>Motivo (opcional)<input name="note" maxlength="240" placeholder="Ej. Aportes del entreno o compra de balones"></label>
+            <button class="button primary" type="submit">Registrar movimiento →</button>
+            <div class="savings-history"><h3>Últimos movimientos</h3><div id="savings-movement-list" aria-live="polite"><p class="savings-history-empty">Cargando movimientos…</p></div></div>
         </form>
         <form id="contact-form">
             <p class="tag">CONTACTO</p><input name="phone" required placeholder="Teléfono"><input name="email" required type="email" placeholder="Correo"><input name="coach" required placeholder="Entrenador"><button class="button primary">Guardar contactos →</button>
@@ -33,9 +39,17 @@
             <p class="tag">GALERÍA</p><input name="caption" required placeholder="Título"><textarea name="description" placeholder="Descripción"></textarea><label>Archivo<input type="file" name="media" required accept="image/*,video/*"></label><button class="button primary">Subir publicación →</button>
         </form>
     </div>
+    <div class="admin-records coach-roster-section">
+        <p class="eyebrow">SOLO LOS AGREGA EL ENTRENADOR</p>
+        <h2>Plantilla de asistencia</h2>
+        <p>Esta lista es independiente de las cuentas de la página. Agrega aquí a los atletas que aparecerán en las asistencias.</p>
+        <button id="attendance-add-player" type="button" class="button primary">＋ Agregar atleta a asistencia</button>
+        <div id="coach-roster-list" aria-live="polite"></div>
+    </div>
     <div class="admin-records">
         <h2>Todo lo publicado</h2>
         <div id="admin-record-list"></div>
     </div>
 </section>
+@include('partials.roster-player-modal')
 @endsection

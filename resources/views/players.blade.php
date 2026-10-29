@@ -3,13 +3,13 @@
 <section class="page-hero admin-only">
     <p class="eyebrow">CONTROL DEL EQUIPO</p>
     <h1>Jugadores <em>Dragons.</em></h1>
-    <p>Crea cuentas de acceso y consulta la lista completa de jugadores registrados.</p>
+    <p>Administra las cuentas que pueden entrar a la página. La plantilla de asistencia se agrega por separado desde Administración.</p>
 </section>
 <section class="admin-hub admin-only">
     <div class="admin-records">
         <p class="eyebrow">CUENTAS CON ACCESO</p>
         <h2>Lista de jugadores</h2>
-        <p>Estas son las cuentas que pueden iniciar sesión en la página.</p>
+        <p>Estas son las cuentas que pueden iniciar sesión en la página. Crear una cuenta no agrega a esa persona a la lista de asistencia.</p>
         <div id="player-list"></div>
     </div><button id="create-user-player" class="floating-player-button" title="Crear nuevo usuario-jugador">＋<span>Crear nuevo usuario-jugador</span></button>
 </section>

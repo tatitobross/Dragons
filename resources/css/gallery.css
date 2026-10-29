@@ -1,0 +1,57 @@
+.uploaded-gallery-item .gallery-caption>span {
+    min-width: 0;
+    overflow-wrap: anywhere
+}
+
+.uploaded-gallery-item video {
+    display: block;
+    width: 100%;
+    height: 255px;
+    background: #061a36;
+    object-fit: contain
+}
+
+.uploaded-gallery-item .like {
+    flex: 0 0 auto;
+    transition: background .16s, color .16s, box-shadow .16s
+}
+
+.uploaded-gallery-item .like:hover,
+.uploaded-gallery-item .like:focus-visible {
+    color: #087fae;
+    background: #d8f6fc;
+    box-shadow: 0 0 0 2px #58d3ef
+}
+
+.uploaded-gallery-item .like[aria-pressed="true"] {
+    color: #087fae
+}
+
+.uploaded-gallery-item .like:disabled,
+.uploaded-gallery-item .comment-send:disabled {
+    opacity: .6;
+    cursor: wait
+}
+
+.uploaded-gallery-item .photo-comments form {
+    align-items: flex-end
+}
+
+.uploaded-gallery-item .photo-comments textarea {
+    min-width: 0;
+    width: 100%;
+    min-height: 42px;
+    resize: none;
+    overflow: hidden;
+    line-height: 1.5
+}
+
+.uploaded-gallery-item .comment-send {
+    min-height: 42px;
+    padding: 10px 12px
+}
+
+.uploaded-gallery-item .photo-comments article p {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere
+}

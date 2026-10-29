@@ -33,13 +33,35 @@ En Authentication → Users, crea las cuentas de correo para Tatito y Carlo con 
 
 Firebase Authentication usa correo y contraseña. Por eso, una vez conectado Firebase, el inicio de sesión se realiza con el correo de cada persona, no con el alias `Tatito` o `CarloUrrutia`.
 
-## 5. Token temporal para ahorros
+## 5. Acceso a los ahorros
 
-El navegador nunca debe generar ni validar el código SMS. El botón del sitio crea un documento en `savingsAccessRequests`. Configura una **Cloud Function** o backend con Admin SDK que:
+El administrador puede consultar el saldo y registrar movimientos. Las cuentas con rol `player` pueden consultar el saldo cuando tienen el correo verificado en Firebase Authentication. El botón del sitio envía el enlace de verificación por correo; al volver y presionarlo nuevamente se renueva el token y se consulta el saldo. No hay un código SMS ni un acceso temporal implementado en esta versión.
 
-1. detecte la solicitud;
-2. genere un código aleatorio y con vencimiento;
-3. lo envíe con un proveedor de SMS autorizado;
-4. al verificarlo, asigne `savingsAccessUntil` con una hora futura al documento `users/{uid}`.
+La creación y edición de cuentas desde el panel se realiza mediante las funciones protegidas `createPlayer`, `updatePlayer` y `deletePlayer`. Deben estar publicadas para gestionar cuentas desde la aplicación. La plantilla de asistencia se administra por separado y no cambia al crear o editar una cuenta.
 
-Así las reglas de Firestore permiten leer `savings` solo durante esa ventana temporal. Para crear cuentas de jugadores desde el panel de Carlo también se requiere esa función de backend: el cliente web no debe crear cuentas ni asignar roles administrativos.
+En **Acceso al club → ¿Olvidaste tu contraseña?**, el enlace abre la página pública `/recuperar-contrasena`, donde cualquier usuario puede solicitar el enlace de recuperación al correo de su cuenta. La apertura usa una ruta real y no depende de intercambiar formularios dentro de una ventana emergente. Firebase Authentication envía el mensaje y gestiona el cambio de contraseña; el perfil, el UID y el rol se conservan. No se necesita iniciar sesión para solicitarlo. El formulario ofrece la misma confirmación para un correo registrado o desconocido y limita los reenvíos al mismo correo a uno por minuto en la página. No se requieren reglas nuevas ni funciones adicionales para esta recuperación.
+
+## Ahorros por movimientos y privacidad de asistencia
+
+El formulario de ahorros registra aportes (`income`) y gastos (`expense`) sobre el saldo actual en `savings/current`. Cada operación se guarda en `savingsMovements/{operationId}` con importe, motivo, saldo anterior y saldo resultante. El historial es exclusivo del administrador. Un reintento con el mismo identificador no duplica el movimiento y no se permiten gastos mayores al saldo. El saldo anterior se conserva; el cambio no ajusta automáticamente ningún monto existente.
+
+La colección `attendance` queda reservada al administrador porque contiene las cantidades pendientes. Los atletas consultan `attendancePublic`, una copia sincronizada que contiene únicamente fecha, asistencia y estado del pago. La primera sesión del administrador con esta versión publica los resúmenes de listas anteriores sin borrar sus datos originales. Las ediciones posteriores actualizan las dos colecciones en una misma transacción.
+
+Todos los usuarios consultan la misma plantilla manual `rosterPlayers`. El entrenador la administra en **Administración → Plantilla de asistencia → Agregar atleta a asistencia**. Una cuenta de acceso en `users` no se agrega automáticamente a la plantilla; crear, editar o eliminar una cuenta no modifica los atletas ni su historial. Los atletas de la plantilla no necesitan tener una cuenta en la página.
+
+Las altas manuales llevan `source: "manual"` y `createdBy`. Las entradas creadas automáticamente por la versión anterior (`id == userId` sin origen manual, o `source: "account"`) quedan fuera de las listas sin borrar documentos ni registros históricos. Las fichas manuales anteriores conservan sus identificadores y su historial. Retirar un atleta lo marca `archived: true`; no elimina su cuenta ni sus asistencias guardadas.
+
+### Publicación de esta versión
+
+1. Ejecuta `npm test` y `npm run build`.
+2. Publica `firestore.rules` y las funciones actualizadas: `firebase deploy --only "firestore:rules,functions"` (las funciones requieren Blaze).
+3. Publica los archivos de la aplicación y sus recursos compilados.
+4. Inicia sesión como administrador para preparar los resúmenes existentes y agrega a los atletas desde **Administración → Plantilla de asistencia**. Comprueba después con una cuenta de atleta que ve la lista manual completa y los estados, pero no los montos.
+
+Coordina la actualización de reglas y aplicación: una versión anterior del navegador deja de poder consultar la colección privada `attendance` cuando se publican estas reglas, y debe recargarse para usar `attendancePublic`. Estos cambios de código no despliegan reglas ni funciones automáticamente.
+
+## Alojamiento en SmarterASP.NET
+
+Consulta `SMARTERASP_DEPLOY.md` para preparar el alojamiento PHP/IIS y el dominio. Las sesiones y la caché de Laravel usan archivos; los datos del club siguen en Firebase. El script `scripts/package-smarterasp.ps1` prepara un ZIP sin el .env privado, sesiones, logs ni bases locales.
+
+Mientras Blaze no esté activo, quedan pendientes la publicación de Cloud Functions y la disponibilidad del bucket de Storage. Las reglas locales ya contemplan fotos de competencias de hasta 10 MB, pero deben publicarse cuando se configure Storage.

@@ -123,6 +123,124 @@ select {
     cursor: default
 }
 
+.attendance-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 16px 0;
+    padding: 14px;
+    background: #effaff;
+    border: 1px solid #c9e4eb;
+    border-radius: 12px
+}
+
+.attendance-actions span {
+    font-size: 13px;
+    color: #407084
+}
+
+.coach-roster-section>button {
+    margin: 4px 0 20px
+}
+
+.attendance-mark-absent {
+    max-width: 100%;
+    background: #e8f4f7;
+    color: #061a36;
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: normal
+}
+
+.attendance-mark-absent:disabled {
+    opacity: .5;
+    cursor: default;
+    transform: none;
+    box-shadow: none
+}
+
+.password-recovery-link {
+    display: inline-block;
+    margin-top: 16px;
+    padding: 4px 0;
+    font: inherit;
+    font-size: 13px
+}
+
+.password-recovery-page {
+    display: grid;
+    place-items: center;
+    padding: 60px 20px;
+    background: #e8f4f7
+}
+
+.password-recovery-panel {
+    width: min(520px, 100%);
+    padding: clamp(24px, 5vw, 40px);
+    background: #fff;
+    border-top: 4px solid #58d3ef;
+    border-radius: 18px;
+    box-shadow: 0 12px 30px #061a3618
+}
+
+.password-recovery-panel h1 {
+    font-size: clamp(2.6rem, 7vw, 3.5rem);
+    line-height: 1;
+    margin: 16px 0
+}
+
+.password-recovery-panel h1 em {
+    color: #087fae;
+    font-style: normal
+}
+
+.password-recovery-panel>p:not(.eyebrow) {
+    line-height: 1.6
+}
+
+.password-recovery-panel form {
+    margin-top: 24px
+}
+
+.password-recovery-panel .password-recovery-help {
+    font-size: 12px;
+    color: #5c7180;
+    margin-top: 20px
+}
+
+.password-recovery-link:hover {
+    color: #087fae
+}
+
+.password-recovery-link:focus-visible {
+    outline: 2px solid #087fae;
+    outline-offset: 4px
+}
+
+.password-reset-feedback {
+    margin: 16px 0 0;
+    padding: 14px;
+    border-radius: 10px;
+    background: #effaff;
+    color: #24516a;
+    font-size: 13px;
+    line-height: 1.6
+}
+
+.password-reset-feedback[data-state="error"] {
+    background: #fff0ed;
+    color: #923a29
+}
+
+#password-reset-form button:disabled {
+    opacity: .6;
+    cursor: wait;
+    transform: none
+}
+
 .player-card-backdrop {
     display: none;
     position: fixed;
@@ -409,6 +527,10 @@ select {
 .competition-image-wrap {
     display: grid;
     place-items: center
+}
+
+.competition-detail:has([data-competition-media][hidden]) {
+    grid-template-columns: 1fr
 }
 
 .competition-image-wrap img {

@@ -15,6 +15,6 @@
         <h2 data-competition-title>Torneo de las <em>Estrellas.</em></h2>
         <p data-competition-copy>Conoce la información del próximo reto de los atletas Dragons.</p>
     </div>
-    <div class="competition-image-wrap"><img data-competition-image src="{{ asset('images/juego-estrellas.png') }}" alt="Foto de la competencia actual"></div>
+    <div class="competition-image-wrap" data-competition-media hidden><img data-competition-image alt="Foto de la competencia actual"></div>
 </section>
 @endsection

@@ -41,8 +41,10 @@
         <h2>Acceso al <em>club</em></h2>
         <p class="modal-intro">Jugadores y entrenador: usa tus credenciales para entrar a tu espacio.</p>
         <form id="login-form"><label>Correo electrónico<input required name="username" type="email" placeholder="correo@ejemplo.com"></label><label>Contraseña<input required type="password" name="password" placeholder="••••••••"></label><button class="button primary">Iniciar sesión →</button></form>
+        <a class="inline-button password-recovery-link" href="{{ route('password.request') }}">¿Olvidaste tu contraseña?</a>
         <p class="form-note">¿Eres visitante? <button class="inline-button" data-switch="guest">Regístrate como invitado</button></p>
-    </template><template id="guest-template">
+    </template>
+    <template id="guest-template">
         <p class="eyebrow">COMUNIDAD DRAGONS</p>
         <h2>Cuenta de <em>invitado</em></h2>
         <form id="guest-form"><label>Nombre<input required name="name"></label><label>Correo electrónico<input required name="email" type="email"></label><label>Contraseña<input required name="password" type="password" minlength="8"></label><button class="button primary">Crear cuenta →</button></form>

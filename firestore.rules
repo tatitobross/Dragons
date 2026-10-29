@@ -25,12 +25,15 @@ service cloud.firestore {
       allow read: if isAdmin() || (signedIn() && request.auth.token.email_verified == true && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'player');
       allow write: if isAdmin();
     }
+    match /savingsMovements/{movementId} { allow read, create: if isAdmin(); }
     match /savingsAccessRequests/{requestId} { allow create: if signedIn() && request.resource.data.userId == request.auth.uid; allow read, update: if isAdmin(); }
     match /playerInvites/{inviteId} { allow create, read, update, delete: if isAdmin(); }
     match /communications/{noticeId} { allow read: if signedIn(); allow create, update, delete: if isAdmin(); }
     match /agendaItems/{itemId} { allow read: if true; allow create, update, delete: if isAdmin(); }
     match /pastCompetitions/{itemId} { allow read: if true; allow create, update, delete: if isAdmin(); }
-    match /attendance/{sessionId} { allow read: if signedIn(); allow create, update, delete: if isAdmin(); }
+    // Includes debt amounts. Athletes read only the synchronized summary below.
+    match /attendance/{sessionId} { allow read, create, update, delete: if isAdmin(); }
+    match /attendancePublic/{sessionId} { allow read: if signedIn(); allow create, update, delete: if isAdmin(); }
     match /rosterPlayers/{playerId} { allow read: if signedIn(); allow create, update, delete: if isAdmin(); }
     match /clubContent/{contentId} { allow read: if true; allow create, update, delete: if isAdmin(); }
   }

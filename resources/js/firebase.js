@@ -1,8 +1,12 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, onAuthStateChanged, reload, sendEmailVerification, signInWithEmailAndPassword, signOut, updateEmail, updatePassword, updateProfile } from 'firebase/auth';
-import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, getFirestore, onSnapshot, setDoc, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, getFirestore, onSnapshot, runTransaction, setDoc, updateDoc } from 'firebase/firestore';
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { markPendingRecordsAbsent } from './attendance';
+import { publicAttendanceSession } from './attendance-privacy';
+import { listManualRosterPlayers } from './roster';
+import { validateCompetitionImage } from './media-validation';
 
 const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -105,7 +109,7 @@ export async function updateCompetition(competition) {
 }
 
 export async function uploadCompetitionImage(file) {
-    if (!file) throw new Error('Selecciona una foto para la competencia.');
+    validateCompetitionImage(file);
     const imageRef = ref(storage, `competitions/current-${Date.now()}-${file.name}`);
     await uploadBytes(imageRef, file);
     return getDownloadURL(imageRef);
@@ -167,11 +171,14 @@ export async function loadClubUsers() {
 
 export async function loadRosterPlayers() {
     const snapshot = await getDocs(collection(db, 'rosterPlayers'));
-    return snapshot.docs.map(item => ({ id: item.id, ...item.data() }));
+    return listManualRosterPlayers(snapshot.docs.map(item => ({ id: item.id, ...item.data() })));
 }
 
 export async function addRosterPlayer(name) {
-    await addDoc(collection(db, 'rosterPlayers'), { name, createdAt: new Date().toISOString() });
+    const cleanName = String(name || '').trim();
+    if (!cleanName) throw new Error('Escribe el nombre del atleta.');
+    if (!auth?.currentUser) throw new Error('Inicia sesión como entrenador.');
+    await addDoc(collection(db, 'rosterPlayers'), { name: cleanName, source: 'manual', createdBy: auth.currentUser.uid, createdAt: new Date().toISOString() });
 }
 
 export async function updateRosterPlayer(id, name) {
@@ -179,35 +186,76 @@ export async function updateRosterPlayer(id, name) {
 }
 
 export async function deleteRosterPlayer(id) {
-    await deleteDoc(doc(db, 'rosterPlayers', id));
+    await updateDoc(doc(db, 'rosterPlayers', id), { archived: true, archivedAt: new Date().toISOString() });
 }
 
-export async function loadAttendanceSessions() {
-    const snapshot = await getDocs(collection(db, 'attendance'));
+export async function loadAttendanceSessions({ admin = false } = {}) {
+    const snapshot = await getDocs(collection(db, admin ? 'attendance' : 'attendancePublic'));
     return snapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
 }
 
-export function watchAttendanceSessions(callback, onError = () => {}) {
-    return onSnapshot(collection(db, 'attendance'), snapshot => {
+export function watchAttendanceSessions(callback, onError = () => {}, { admin = false } = {}) {
+    return onSnapshot(collection(db, admin ? 'attendance' : 'attendancePublic'), snapshot => {
         callback(snapshot.docs.map(item => ({ id: item.id, ...item.data() })).sort((a, b) => String(b.date || '').localeCompare(String(a.date || ''))));
     }, onError);
 }
 
 export async function createAttendanceSession(date) {
-    await addDoc(collection(db, 'attendance'), { date, records: {}, createdAt: new Date().toISOString() });
+    const sessionRef = doc(collection(db, 'attendance'));
+    const session = { date, records: {}, createdAt: new Date().toISOString() };
+    await runTransaction(db, async transaction => {
+        transaction.set(sessionRef, session);
+        transaction.set(doc(db, 'attendancePublic', sessionRef.id), publicAttendanceSession(session));
+    });
 }
 
 export async function saveAttendanceRecord(sessionId, userId, values) {
-    await updateDoc(doc(db, 'attendance', sessionId), { [`records.${userId}`]: values });
+    const sessionRef = doc(db, 'attendance', sessionId);
+    await runTransaction(db, async transaction => {
+        const snapshot = await transaction.get(sessionRef);
+        if (!snapshot.exists()) throw new Error('La lista de asistencia ya no existe.');
+        const session = snapshot.data();
+        const records = { ...(session.records || {}), [userId]: values };
+        transaction.update(sessionRef, { records });
+        transaction.set(doc(db, 'attendancePublic', sessionId), publicAttendanceSession({ ...session, records }));
+    });
+}
+
+export async function markPendingAttendanceAbsent(sessionId, playerIds) {
+    const sessionRef = doc(db, 'attendance', sessionId);
+    return runTransaction(db, async transaction => {
+        const snapshot = await transaction.get(sessionRef);
+        if (!snapshot.exists()) throw new Error('La lista de asistencia ya no existe.');
+
+        // Recheck the latest records on every retry so concurrent edits are preserved.
+        const session = snapshot.data();
+        const result = markPendingRecordsAbsent(session.records || {}, playerIds);
+        if (result.updatedCount) {
+            transaction.update(sessionRef, { records: result.records });
+            transaction.set(doc(db, 'attendancePublic', sessionId), publicAttendanceSession({ ...session, records: result.records }));
+        }
+        return result.updatedCount;
+    });
+}
+
+export async function publishAttendanceSummaries() {
+    const snapshot = await getDocs(collection(db, 'attendance'));
+    // Existing private records stay intact; publish only the allowed fields for athletes.
+    for (const item of snapshot.docs) {
+        await runTransaction(db, async transaction => {
+            const sessionRef = doc(db, 'attendance', item.id);
+            const publicRef = doc(db, 'attendancePublic', item.id);
+            const [current, published] = await Promise.all([transaction.get(sessionRef), transaction.get(publicRef)]);
+            if (!current.exists()) return;
+            const summary = publicAttendanceSession(current.data());
+            if (!published.exists() || JSON.stringify(published.data()) !== JSON.stringify(summary)) {
+                transaction.set(publicRef, summary);
+            }
+        });
+    }
 }
 
 export async function saveClubSettings(settings) { await setDoc(doc(db, 'clubContent', 'settings'), settings, { merge: true }); }
-export async function saveSavings(amount) {
-    const normalizedAmount = Number(amount);
-    if (!Number.isFinite(normalizedAmount) || normalizedAmount < 0) throw new Error('Escribe un monto de ahorro válido.');
-    await setDoc(doc(db, 'savings', 'current'), { amount: normalizedAmount, updatedAt: new Date().toISOString() }, { merge: true });
-    return normalizedAmount;
-}
 export async function loadSavings() { const snapshot = await getDoc(doc(db, 'savings', 'current')); return snapshot.exists() ? snapshot.data() : null; }
 export async function updateClubRecord(collectionName, id, values) { await updateDoc(doc(db, collectionName, id), values); }
 export async function deleteClubRecord(collectionName, id) { await deleteDoc(doc(db, collectionName, id)); }
