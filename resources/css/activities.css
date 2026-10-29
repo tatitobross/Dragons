@@ -1,0 +1,39 @@
+.activity-create { background: white; border-top: 3px solid var(--cyan); padding: 26px; margin-bottom: 24px; max-width: 620px; }
+.activity-create label { display: block; margin-bottom: 14px; }
+.activity-board { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 28px; background: white; padding: 28px; }
+.activity-main { min-width: 0; }
+#activity-control .attendance-session-heading { display: flex; align-items: center; gap: 12px; margin: 16px 0; }
+#activity-control .attendance-session-heading h3 { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+#activity-control .attendance-session-actions { display: flex; flex-shrink: 0; flex-wrap: nowrap; margin: 0; gap: 8px; }
+#activity-control .attendance-icon { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: 0; border-radius: 10px; background: #e8f4f7; color: #061a36; cursor: pointer; }
+#activity-control .attendance-icon svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+#activity-control .attendance-icon.attendance-delete-session { background: #fce8e8; color: #9b2525; }
+#activity-control .attendance-icon:hover { filter: brightness(.94); }
+#activity-control .attendance-icon:focus-visible { outline: 2px solid #0089ae; outline-offset: 3px; }
+.activity-summary { background: #effaff; border-top: 3px solid var(--cyan); padding: 24px; align-self: start; border-radius: 0 0 16px 16px; }
+.activity-summary h3 { font-size: 30px; }
+.activity-counts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 24px 0; }
+.activity-counts span { font-size: 11px; color: #52677c; text-align: center; }
+.activity-counts strong { display: block; color: var(--ink); font: 700 32px 'Barlow Condensed', sans-serif; margin-bottom: 6px; }
+.activity-pending-names p { background: white; border-radius: 10px; padding: 12px; font-size: 13px; overflow-wrap: anywhere; }
+.activity-pending-names span { display: block; color: #9a610f; font-size: 11px; margin-top: 5px; }
+.activity-date { color: #617185; font-size: 14px; }
+.activity-table-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 24px 0 10px; }
+.activity-table-heading p { color: #617185; font-size: 13px; }
+.activity-table-scroll { overflow-x: auto; }
+.activity-table-scroll table { width: 100%; min-width: 340px; }
+.activity-table-scroll td:first-child { min-width: 140px; overflow-wrap: anywhere; }
+.activity-table-scroll select { min-width: 125px; }
+.activity-person-detail { display: block; color: #617185; margin-top: 7px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.activity-row-actions { display: flex; gap: 7px; }
+.activity-status { display: inline-block; font-size: 12px; font-weight: 700; padding: 7px 12px; border-radius: 999px; }
+.activity-status.pending { background: #fff2d9; color: #8a570d; }
+.activity-status.paid { background: #e2f7e9; color: #24613c; }
+.activity-empty { background: white; padding: 36px; border-radius: 12px; }
+.activity-empty h3 { font-size: 32px; }
+.activity-error { background: #fff0ee; color: #8d3030; padding: 16px; border-radius: 10px; }
+#activity-control [data-activity-editor-fields] { display: grid; gap: 16px; }
+.site-header { height: auto; min-height: 78px; }
+.site-header nav { min-width: 0; flex-wrap: wrap; column-gap: 16px; row-gap: 9px; }
+@media (max-width: 1000px) { .activity-board { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .activity-board { padding: 16px; } .activity-create { padding: 20px; } }

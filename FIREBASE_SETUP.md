@@ -62,6 +62,12 @@ Las altas manuales llevan `source: "manual"` y `createdBy`. Las entradas creadas
 
 Coordina la actualización de reglas y aplicación: una versión anterior del navegador deja de poder consultar la colección privada `attendance` cuando se publican estas reglas, y debe recargarse para usar `attendancePublic`. Estos cambios de código no despliegan reglas ni funciones automáticamente.
 
+## Control de Actividades
+
+La ruta `/control-de-actividades` muestra las actividades más recientes primero. El administrador crea cada actividad con nombre y fecha opcional y agrega manualmente a las personas que recibieron una entrega. Cada entrega tiene nombre, detalle opcional (por ejemplo, números de rifa) y estado `pending` o `paid`. El estado puede corregirse en ambos sentidos. El lápiz edita nombres y detalles; la × pide confirmación para eliminar actividades o entregas.
+
+Los documentos `activities/{activityId}` contienen la lista de entregas en `participants`. No se agregan automáticamente cuentas ni atletas de asistencia; eliminar una actividad no cambia usuarios, asistencias ni ahorros. El límite es de 200 personas por actividad para mantener el documento dentro de un tamaño manejable. Los cambios de pagos usan transacciones para conservar actualizaciones simultáneas de otros participantes. Los usuarios autenticados pueden consultar; solo el administrador puede escribir mediante las reglas de Firestore. No requiere Blaze, Cloud Functions ni Storage. Publica `firestore.rules` junto con esta versión.
+
 ## Alojamiento en SmarterASP.NET
 
 Consulta `SMARTERASP_DEPLOY.md` para preparar el alojamiento PHP/IIS y el dominio. Las sesiones y la caché de Laravel usan archivos; los datos del club siguen en Firebase. El script `scripts/package-smarterasp.ps1` prepara un ZIP sin el .env privado, sesiones, logs ni bases locales.

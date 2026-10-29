@@ -2,6 +2,8 @@ import './bootstrap';
 import '../css/overrides.css';
 import '../css/savings.css';
 import '../css/gallery.css';
+import '../css/activities.css';
+import { createActivityControl } from './activities-control';
 import { addAgendaItem, addRosterPlayer, createAttendanceSession, createPlayer, deleteClubRecord, deletePlayer, deleteRosterPlayer, firebaseEnabled, loadAttendanceSessions, loadClubUsers, loadMemberNotices, loadPublicClubData, loadRosterPlayers, loadSavings, markPendingAttendanceAbsent, publishAttendanceSummaries, publishNotice, registerGuest, requestSavingsEmailLink, saveAttendanceRecord, saveClubSettings, signInClub, signOutClub, submitEventQuestion, updateClubRecord, updateCompetition, updateOwnPassword, updateOwnProfile, updatePlayer, updateRosterPlayer, uploadCompetitionImage, uploadGalleryMedia, uploadProfileImage, watchAttendanceSessions, watchClubSession } from './firebase';
 import { addComment, addLike, loadGalleryEngagement } from './gallery-firebase';
 import { bindGalleryInteractions, galleryCardHtml, galleryCommentHtml, updateGalleryLikeButton } from './gallery';
@@ -18,6 +20,7 @@ const qa = selector => [...document.querySelectorAll(selector)];
 const modal = q('#modal');
 const content = q('#modal-content');
 const templates = { login: 'login-template', guest: 'guest-template', question: 'question-template', dashboard: 'dashboard-template' };
+const activityControl = createActivityControl(q('#activity-control'), { toast });
 bindPasswordResetForm(q('#password-reset-form'), q('#password-reset-feedback'));
 let activeUser = null;
 let savingsAmount = null;
@@ -53,6 +56,7 @@ function toast(message) { const el = document.createElement('div'); el.className
 function close() { modal?.classList.remove('open'); }
 function open(name) { const template = q(`#${templates[name]}`); if (!template || !modal || !content) return; content.innerHTML = template.innerHTML; modal.classList.add('open'); bindModal(name); }
 function setMemberMode(user) {
+    activityControl?.setUser(user);
     document.body.classList.toggle('member-mode', Boolean(user));
     document.body.classList.toggle('is-admin', Boolean(user?.admin));
     const button = q('.access-btn');
