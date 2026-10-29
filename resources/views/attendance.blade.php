@@ -10,6 +10,17 @@
     <div id="attendance-list" class="attendance-list"></div>
 </section>
 @include('partials.roster-player-modal')
+<div id="attendance-session-modal" class="player-card-backdrop">
+    <form id="attendance-session-edit-form" class="player-card admin-edit-card" role="dialog" aria-modal="true" aria-labelledby="attendance-session-title">
+        <button type="button" class="player-card-close" data-close-attendance-session aria-label="Cerrar">×</button>
+        <div class="player-card-icon">✎</div>
+        <p class="eyebrow">LISTA DE ASISTENCIA</p>
+        <h2 id="attendance-session-title">Cambiar fecha</h2>
+        <p data-attendance-session-copy></p>
+        <label data-attendance-session-date>Fecha del entreno<input type="date" name="date" required></label>
+        <div class="player-card-actions"><button type="button" class="button" data-close-attendance-session>Cancelar</button><button type="submit" class="button primary" data-attendance-session-save>Guardar fecha →</button></div>
+    </form>
+</div>
 <div id="debt-card-modal" class="player-card-backdrop">
     <form id="debt-card-form" class="player-card debt-card"><button type="button" class="debt-card-close player-card-close" aria-label="Cerrar">×</button>
         <div class="player-card-icon">L</div>

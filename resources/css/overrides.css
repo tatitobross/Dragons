@@ -141,6 +141,30 @@ select {
     color: #407084
 }
 
+.attendance-session-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 12px 0;
+}
+
+.attendance-session-actions .button {
+    padding: 10px 14px;
+    font-size: 12px;
+    background: #e8f4f7;
+    color: #061a36;
+}
+
+.attendance-session-actions .attendance-delete-session,
+.button.attendance-delete-session {
+    background: #fce8e8;
+    color: #9b2525;
+}
+
+.attendance-session-actions .button:hover { filter: brightness(.95); }
+
+#attendance-session-edit-form [hidden] { display: none; }
+
 .coach-roster-section>button {
     margin: 4px 0 20px
 }

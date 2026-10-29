@@ -49,6 +49,8 @@ La colección `attendance` queda reservada al administrador porque contiene las 
 
 Todos los usuarios consultan la misma plantilla manual `rosterPlayers`. El entrenador la administra en **Administración → Plantilla de asistencia → Agregar atleta a asistencia**. Una cuenta de acceso en `users` no se agrega automáticamente a la plantilla; crear, editar o eliminar una cuenta no modifica los atletas ni su historial. Los atletas de la plantilla no necesitan tener una cuenta en la página.
 
+En cada lista, el administrador dispone de **Cambiar fecha** y **Eliminar entreno**. Cambiar la fecha conserva el identificador, las asistencias y los pagos; actualiza también la copia visible para atletas sin publicar cantidades de deuda. Eliminar requiere confirmación y borra ambas copias de la lista en una operación atómica. No borra cuentas, atletas de la plantilla ni otras listas. Estas operaciones usan Firestore y no requieren Cloud Functions ni Blaze.
+
 Las altas manuales llevan `source: "manual"` y `createdBy`. Las entradas creadas automáticamente por la versión anterior (`id == userId` sin origen manual, o `source: "account"`) quedan fuera de las listas sin borrar documentos ni registros históricos. Las fichas manuales anteriores conservan sus identificadores y su historial. Retirar un atleta lo marca `archived: true`; no elimina su cuenta ni sus asistencias guardadas.
 
 ### Publicación de esta versión

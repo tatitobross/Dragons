@@ -6,6 +6,7 @@ import { addAgendaItem, addRosterPlayer, createAttendanceSession, createPlayer, 
 import { addComment, addLike, loadGalleryEngagement } from './gallery-firebase';
 import { bindGalleryInteractions, galleryCardHtml, galleryCommentHtml, updateGalleryLikeButton } from './gallery';
 import { getPendingAttendancePlayerIds } from './attendance';
+import { deleteAttendanceSession, updateAttendanceSessionDate } from './attendance-session-firebase';
 import { getRosterPlayerIds, resolveRosterAttendanceRecord } from './roster';
 import { watchRosterPlayers } from './roster-firebase';
 import { loadSavingsMovements, recordSavingsMovement, watchSavings } from './savings-firebase';
@@ -22,6 +23,9 @@ let activeUser = null;
 let savingsAmount = null;
 let recordCache = new Map();
 let attendancePage = 0;
+let attendanceFocusId = null;
+let attendanceSessionContext = null;
+let savingAttendanceSession = false;
 let pendingDebtRecord = null;
 let editingContext = null;
 let stopAttendanceWatch = null;
@@ -246,18 +250,24 @@ function renderAttendance(sessions, users) {
     const box = q('#attendance-list'); if (!box) return;
     currentAttendancePlayers = users; currentAttendanceSessions = sessions;
     if (!sessions.length) { box.innerHTML = '<p>Aún no hay listas de asistencia creadas.</p>'; return; }
+    if (attendanceFocusId) {
+        const index = sessions.findIndex(session => session.id === attendanceFocusId);
+        if (index !== -1) attendancePage = index;
+        attendanceFocusId = null;
+    }
     attendancePage = Math.max(0, Math.min(attendancePage, sessions.length - 1));
     const session = sessions[attendancePage];
     const visibleUsers = users;
     const pendingCount = getPendingAttendancePlayerIds(session.records || {}, visibleUsers).length;
     const markingPending = markingPendingSession === session.id;
+    const sessionActions = activeUser?.admin ? `<div class="attendance-session-actions"><button type="button" class="button" data-attendance-edit-date data-session="${esc(session.id)}">Cambiar fecha</button><button type="button" class="button attendance-delete-session" data-attendance-delete-session data-session="${esc(session.id)}">Eliminar entreno</button></div>` : '';
     const attendanceActions = activeUser?.admin ? `<div class="attendance-actions"><span>${pendingCount ? `${pendingCount} ${pendingCount === 1 ? 'atleta pendiente' : 'atletas pendientes'}` : 'Sin asistencias pendientes'}</span><button type="button" class="button attendance-mark-absent" data-attendance-mark-absent data-session="${esc(session.id)}" data-pending-count="${pendingCount}" ${pendingCount === 0 || markingPending ? 'disabled' : ''} aria-busy="${markingPending}">${markingPending ? 'Guardando…' : 'Marcar pendientes como no asistió'}</button></div>` : '';
     const rows = visibleUsers.map(user => {
         const { playerId, record } = resolveRosterAttendanceRecord(session.records || {}, user); const status = record.status || '';
         if (!activeUser?.admin) return `<tr><td>${esc(user.name)}</td><td>${({ asistio: 'Asistió', falto: 'No asistió' })[status] || 'Pendiente'}</td><td>${status === 'asistio' ? ({ pago: 'Pagó', debe: 'Debe' })[record.paymentStatus] || 'Pendiente' : '—'}</td></tr>`;
         return `<tr data-session="${esc(session.id)}" data-player="${esc(playerId)}"><td>${esc(user.name)}</td><td><select data-attendance-status><option value="">Pendiente</option><option value="asistio" ${status === 'asistio' ? 'selected' : ''}>Asistió</option><option value="falto" ${status === 'falto' ? 'selected' : ''}>No asistió</option></select></td><td>${status === 'asistio' ? `<select data-payment-status><option value="" ${!record.paymentStatus ? 'selected' : ''}>Pendiente</option><option value="pago" ${record.paymentStatus === 'pago' ? 'selected' : ''}>Pagó</option><option value="debe" ${record.paymentStatus === 'debe' ? 'selected' : ''}>Debe</option></select>${record.paymentStatus === 'debe' ? `<small class="debt-badge">Debe: L ${esc(record.debtAmount || '0')}</small>` : ''}` : '—'}</td></tr>`;
     }).join('') || '<tr><td colspan="3">El entrenador aún no ha agregado atletas a la plantilla de asistencia.</td></tr>';
-    box.innerHTML = `<div class="attendance-split ${activeUser?.admin ? '' : 'athlete-attendance'}"><article class="attendance-list"><div class="attendance-pager"><button data-attendance-prev ${attendancePage === 0 ? 'disabled' : ''}>← Más reciente</button><span>${attendancePage + 1} de ${sessions.length}</span><button data-attendance-next ${attendancePage === sessions.length - 1 ? 'disabled' : ''}>Entreno anterior →</button></div><h3>Entreno · ${esc(session.date)}</h3>${attendanceActions}<table class="attendance-table"><thead><tr><th>Jugador</th><th>Asistencia</th><th>Pago</th></tr></thead><tbody>${rows}</tbody></table></article>${activeUser?.admin ? renderDebtPanel(sessions, users) : ''}</div>`;
+    box.innerHTML = `<div class="attendance-split ${activeUser?.admin ? '' : 'athlete-attendance'}"><article class="attendance-list"><div class="attendance-pager"><button data-attendance-prev ${attendancePage === 0 ? 'disabled' : ''}>← Más reciente</button><span>${attendancePage + 1} de ${sessions.length}</span><button data-attendance-next ${attendancePage === sessions.length - 1 ? 'disabled' : ''}>Entreno anterior →</button></div><h3>Entreno · ${esc(session.date)}</h3>${sessionActions}${attendanceActions}<table class="attendance-table"><thead><tr><th>Jugador</th><th>Asistencia</th><th>Pago</th></tr></thead><tbody>${rows}</tbody></table></article>${activeUser?.admin ? renderDebtPanel(sessions, users) : ''}</div>`;
 }
 
 async function syncPublicContent() {
@@ -625,6 +635,39 @@ q('#debt-card-form')?.addEventListener('submit', async event => {
 q('#attendance-session-form')?.addEventListener('submit', async event => {
     event.preventDefault(); try { if (!activeUser?.admin) throw new Error('Solo el entrenador puede crear listas.'); await createAttendanceSession(new FormData(event.target).get('date')); event.target.reset(); toast('Lista de asistencia creada.'); await syncMemberContent(); } catch (error) { toast(`No fue posible crear: ${error.message}`); }
 });
+function closeAttendanceSessionCard() {
+    if (savingAttendanceSession) return;
+    q('#attendance-session-modal')?.classList.remove('open');
+    attendanceSessionContext = null;
+}
+qa('[data-close-attendance-session]').forEach(button => button.addEventListener('click', closeAttendanceSessionCard));
+q('#attendance-session-modal')?.addEventListener('click', event => {
+    if (event.target === event.currentTarget) closeAttendanceSessionCard();
+});
+q('#attendance-session-edit-form')?.addEventListener('submit', async event => {
+    event.preventDefault();
+    if (!activeUser?.admin || !attendanceSessionContext || savingAttendanceSession) return;
+    const { id, action } = attendanceSessionContext;
+    const date = new FormData(event.currentTarget).get('date');
+    const controls = [...event.currentTarget.elements];
+    const submit = q('[data-attendance-session-save]'); const label = submit.textContent;
+    savingAttendanceSession = true;
+    controls.forEach(control => { control.disabled = true; }); submit.textContent = 'Guardando…';
+    let saved = false;
+    try {
+        if (action === 'delete') await deleteAttendanceSession(id);
+        else { attendanceFocusId = id; await updateAttendanceSessionDate(id, date); }
+        saved = true;
+        toast(action === 'delete' ? 'Entreno eliminado.' : 'Fecha actualizada. Las asistencias y pagos se conservaron.');
+    } catch (error) {
+        attendanceFocusId = null;
+        toast(`No fue posible guardar: ${error.message}`);
+    } finally {
+        savingAttendanceSession = false;
+        controls.forEach(control => { control.disabled = false; }); submit.textContent = label;
+    }
+    if (saved) { closeAttendanceSessionCard(); await syncMemberContent(); }
+});
 q('#attendance-list')?.addEventListener('change', async event => {
     const row = event.target.closest('tr[data-session]'); if (!row || !activeUser?.admin) return; const status = row.querySelector('[data-attendance-status]')?.value || ''; const paymentStatus = row.querySelector('[data-payment-status]')?.value || '';
     if (status === 'asistio' && paymentStatus === 'debe') { pendingDebtRecord = { sessionId: row.dataset.session, userId: row.dataset.player }; q('#debt-card-modal')?.classList.add('open'); q('#debt-card-form input[name="amount"]')?.focus(); return; }
@@ -643,6 +686,25 @@ q('#attendance-list')?.addEventListener('submit', async event => {
 });
 q('#attendance-list')?.addEventListener('click', async event => {
     if (event.target.closest('[data-retry-member-content]')) return syncMemberContent();
+    const sessionButton = event.target.closest('[data-attendance-edit-date],[data-attendance-delete-session]');
+    if (sessionButton) {
+        if (!activeUser?.admin || savingAttendanceSession) return;
+        const session = currentAttendanceSessions.find(item => item.id === sessionButton.dataset.session);
+        if (!session) return;
+        const deleting = sessionButton.hasAttribute('data-attendance-delete-session');
+        attendanceSessionContext = { id: session.id, action: deleting ? 'delete' : 'date' };
+        q('#attendance-session-title').textContent = deleting ? 'Eliminar entreno' : 'Cambiar fecha';
+        q('[data-attendance-session-copy]').textContent = deleting ? `Se eliminará el entreno del ${session.date}, con sus asistencias y pagos registrados. Esta acción no se puede deshacer. Las cuentas y la plantilla de atletas se conservan.` : 'Corrige la fecha de esta lista. Las asistencias y los pagos registrados se conservan.';
+        const date = q('#attendance-session-edit-form input[name="date"]');
+        date.value = session.date; date.required = !deleting;
+        q('[data-attendance-session-date]').hidden = deleting;
+        const submit = q('[data-attendance-session-save]');
+        submit.textContent = deleting ? 'Sí, eliminar entreno' : 'Guardar fecha →';
+        submit.classList.toggle('attendance-delete-session', deleting);
+        q('#attendance-session-modal').classList.add('open');
+        (deleting ? q('#attendance-session-edit-form [data-close-attendance-session]') : date).focus();
+        return;
+    }
     const bulkButton = event.target.closest('[data-attendance-mark-absent]');
     if (bulkButton) {
         if (!activeUser?.admin || bulkButton.disabled || markingPendingSession) return;
