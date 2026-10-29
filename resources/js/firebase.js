@@ -3,7 +3,7 @@ import { getAuth, createUserWithEmailAndPassword, onAuthStateChanged, reload, se
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, getFirestore, onSnapshot, runTransaction, setDoc, updateDoc } from 'firebase/firestore';
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { markPendingRecordsAbsent } from './attendance';
+import { attendanceSessionTitle, markPendingRecordsAbsent } from './attendance';
 import { publicAttendanceSession } from './attendance-privacy';
 import { listManualRosterPlayers } from './roster';
 import { validateCompetitionImage } from './media-validation';
@@ -200,9 +200,9 @@ export function watchAttendanceSessions(callback, onError = () => {}, { admin = 
     }, onError);
 }
 
-export async function createAttendanceSession(date) {
+export async function createAttendanceSession(date, title = 'Entreno') {
     const sessionRef = doc(collection(db, 'attendance'));
-    const session = { date, records: {}, createdAt: new Date().toISOString() };
+    const session = { title: attendanceSessionTitle(title), date, records: {}, createdAt: new Date().toISOString() };
     await runTransaction(db, async transaction => {
         transaction.set(sessionRef, session);
         transaction.set(doc(db, 'attendancePublic', sessionRef.id), publicAttendanceSession(session));

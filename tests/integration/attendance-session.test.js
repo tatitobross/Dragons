@@ -40,7 +40,7 @@ mock.module('firebase/firestore', { exports: {
 } });
 mock.module(new URL('../../resources/js/firebase.js', import.meta.url).href, { exports: { db, auth } });
 
-const { updateAttendanceSessionDate, deleteAttendanceSession } = await import('../../resources/js/attendance-session-firebase.js');
+const { updateAttendanceSessionDate, updateAttendanceSessionDetails, deleteAttendanceSession } = await import('../../resources/js/attendance-session-firebase.js');
 
 beforeEach(() => {
     documents = new Map(); versions = new Map(); commitError = null; afterRead = null;
@@ -72,6 +72,28 @@ test('preserves a simultaneous payment change on transaction retry', async () =>
     await updateAttendanceSessionDate('session-1', '2026-10-27');
     assert.equal(documents.get('attendance/session-1').records.athlete.paymentStatus, 'pago');
     assert.equal(documents.get('attendancePublic/session-1').records.athlete.paymentStatus, 'pago');
+});
+
+test('renames a legacy list for both roles without changing attendance or exposing debt amounts', async () => {
+    const original = structuredClone(documents.get('attendance/session-1'));
+    await updateAttendanceSessionDetails('session-1', { title: '  Cena del equipo  ', date: original.date });
+    assert.deepEqual(documents.get('attendance/session-1'), { ...original, title: 'Cena del equipo' });
+    const summary = documents.get('attendancePublic/session-1');
+    assert.equal(summary.title, 'Cena del equipo');
+    assert.equal(summary.records.athlete.paymentStatus, 'debe');
+    assert.equal('debtAmount' in summary.records.athlete, false);
+    // A subsequent date correction must retain the custom name in both copies.
+    await updateAttendanceSessionDate('session-1', '2026-10-27');
+    assert.equal(documents.get('attendance/session-1').title, 'Cena del equipo');
+    assert.equal(documents.get('attendancePublic/session-1').title, 'Cena del equipo');
+});
+
+test('rejects blank and oversized list names before changing either view', async () => {
+    const original = structuredClone([...documents]);
+    for (const title of ['', '   ', 'a'.repeat(121), null, 123]) {
+        await assert.rejects(updateAttendanceSessionDetails('session-1', { title, date: '2026-10-25' }), /nombre/);
+    }
+    assert.deepEqual([...documents], original);
 });
 
 test('rejects invalid dates without changing either view', async () => {

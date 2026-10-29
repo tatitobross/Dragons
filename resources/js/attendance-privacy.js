@@ -7,5 +7,5 @@ export function publicAttendanceSession(session) {
         }];
     }));
 
-    return { date: session.date || '', createdAt: session.createdAt || '', records };
+    return { date: session.date || '', createdAt: session.createdAt || '', ...(typeof session.title === 'string' && session.title.trim() ? { title: session.title.trim() } : {}), records };
 }
