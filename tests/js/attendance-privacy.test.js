@@ -33,9 +33,3 @@ test('summaries handle empty sessions and do not copy unexpected status values',
         three: null,
     } }).records, { one: { status: '' }, two: { status: 'asistio', paymentStatus: '' }, three: { status: '' } });
 });
-
-test('publishes the list name while keeping unrelated metadata private', () => {
-    assert.deepEqual(publicAttendanceSession({ title: ' Cena del equipo ', internalNote: 'private' }), {
-        title: 'Cena del equipo', date: '', createdAt: '', records: {},
-    });
-});

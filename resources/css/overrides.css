@@ -143,34 +143,17 @@ select {
 
 .attendance-session-actions {
     display: flex;
-    flex-shrink: 0;
-    gap: 8px;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 12px 0;
 }
 
-.attendance-session-heading {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin: 16px 0;
-}
-
-.attendance-session-heading h3 { margin: 0; min-width: 0; overflow-wrap: anywhere; }
-
-.attendance-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border: 0;
-    border-radius: 10px;
+.attendance-session-actions .button {
+    padding: 10px 14px;
+    font-size: 12px;
     background: #e8f4f7;
     color: #061a36;
-    cursor: pointer;
-    transition: background .15s ease, box-shadow .15s ease;
 }
-
-.attendance-icon svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
 
 .attendance-session-actions .attendance-delete-session,
 .button.attendance-delete-session {
@@ -178,11 +161,7 @@ select {
     color: #9b2525;
 }
 
-.attendance-icon:hover { background: #caedf5; box-shadow: 0 2px 8px #061a361f; }
-.attendance-icon.attendance-delete-session:hover { background: #f6cccc; }
-.attendance-icon:focus-visible { outline: 2px solid #0089ae; outline-offset: 3px; }
-
-.attendance-create label { display: block; margin-bottom: 12px; }
+.attendance-session-actions .button:hover { filter: brightness(.95); }
 
 #attendance-session-edit-form [hidden] { display: none; }
 

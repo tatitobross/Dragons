@@ -2,14 +2,10 @@
 .activity-create label { display: block; margin-bottom: 14px; }
 .activity-board { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 28px; background: white; padding: 28px; }
 .activity-main { min-width: 0; }
-#activity-control .attendance-session-heading { display: flex; align-items: center; gap: 12px; margin: 16px 0; }
-#activity-control .attendance-session-heading h3 { margin: 0; min-width: 0; overflow-wrap: anywhere; }
-#activity-control .attendance-session-actions { display: flex; flex-shrink: 0; flex-wrap: nowrap; margin: 0; gap: 8px; }
-#activity-control .attendance-icon { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: 0; border-radius: 10px; background: #e8f4f7; color: #061a36; cursor: pointer; }
-#activity-control .attendance-icon svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
-#activity-control .attendance-icon.attendance-delete-session { background: #fce8e8; color: #9b2525; }
-#activity-control .attendance-icon:hover { filter: brightness(.94); }
-#activity-control .attendance-icon:focus-visible { outline: 2px solid #0089ae; outline-offset: 3px; }
+.activity-main>h3 { overflow-wrap: anywhere; }
+.activity-list-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
+.activity-list-actions .button { padding: 10px 14px; font-size: 12px; background: #e8f4f7; }
+.activity-list-actions .attendance-delete-session { background: #fce8e8; color: #9b2525; }
 .activity-summary { background: #effaff; border-top: 3px solid var(--cyan); padding: 24px; align-self: start; border-radius: 0 0 16px 16px; }
 .activity-summary h3 { font-size: 30px; }
 .activity-counts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 24px 0; }

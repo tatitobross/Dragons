@@ -2,6 +2,17 @@ export function getRosterPlayerIds(player) {
     return [...new Set([player.id, ...(player.aliasIds || []), player.userId].filter(id => typeof id === 'string' && id))];
 }
 
+export function isAttendancePlayerVisible(session, player) {
+    const ids = typeof player === 'string' ? [player] : getRosterPlayerIds(player);
+    const excluded = Array.isArray(session.excludedPlayerIds) ? session.excludedPlayerIds : [];
+    if (ids.some(id => excluded.includes(id))) return false;
+    return !(player.attendanceExcludedFrom && session.date && session.date >= player.attendanceExcludedFrom);
+}
+
+export function attendancePlayersForSession(session, players = []) {
+    return players.filter(player => isAttendancePlayerVisible(session, player));
+}
+
 export function resolveRosterAttendanceRecord(records = {}, player) {
     const ids = getRosterPlayerIds(player);
     const recordedId = ids.find(id => records[id]?.status) || ids.find(id => Object.hasOwn(records, id)) || player.id;

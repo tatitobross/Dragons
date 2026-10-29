@@ -1,0 +1,10 @@
+.person-name-row { display: flex; align-items: center; gap: 12px; }
+.person-row-actions { display: flex; flex-shrink: 0; gap: 6px; }
+.person-name-text { min-width: 0; overflow-wrap: anywhere; }
+.person-name-text small { display: block; color: #617185; margin-top: 6px; white-space: pre-wrap; }
+.person-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 32px; height: 32px; border: 0; border-radius: 9px; background: #e8f4f7; color: #061a36; cursor: pointer; transition: background .15s; }
+.person-icon svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.person-icon.remove { background: #fce8e8; color: #9b2525; }
+.person-icon:hover { background: #caedf5; }
+.person-icon.remove:hover { background: #f6cccc; }
+.person-icon:focus-visible { outline: 2px solid #0089ae; outline-offset: 3px; }

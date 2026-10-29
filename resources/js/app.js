@@ -3,13 +3,16 @@ import '../css/overrides.css';
 import '../css/savings.css';
 import '../css/gallery.css';
 import '../css/activities.css';
+import '../css/person-name.css';
+import { personName } from './person-name';
+import { removePlayerFromAttendance } from './attendance-players-firebase';
 import { createActivityControl } from './activities-control';
 import { addAgendaItem, addRosterPlayer, createAttendanceSession, createPlayer, deleteClubRecord, deletePlayer, deleteRosterPlayer, firebaseEnabled, loadAttendanceSessions, loadClubUsers, loadMemberNotices, loadPublicClubData, loadRosterPlayers, loadSavings, markPendingAttendanceAbsent, publishAttendanceSummaries, publishNotice, registerGuest, requestSavingsEmailLink, saveAttendanceRecord, saveClubSettings, signInClub, signOutClub, submitEventQuestion, updateClubRecord, updateCompetition, updateOwnPassword, updateOwnProfile, updatePlayer, updateRosterPlayer, uploadCompetitionImage, uploadGalleryMedia, uploadProfileImage, watchAttendanceSessions, watchClubSession } from './firebase';
 import { addComment, addLike, loadGalleryEngagement } from './gallery-firebase';
 import { bindGalleryInteractions, galleryCardHtml, galleryCommentHtml, updateGalleryLikeButton } from './gallery';
 import { getPendingAttendancePlayerIds } from './attendance';
-import { deleteAttendanceSession, updateAttendanceSessionDetails } from './attendance-session-firebase';
-import { getRosterPlayerIds, resolveRosterAttendanceRecord } from './roster';
+import { deleteAttendanceSession, updateAttendanceSessionDate } from './attendance-session-firebase';
+import { attendancePlayersForSession, getRosterPlayerIds, isAttendancePlayerVisible, resolveRosterAttendanceRecord } from './roster';
 import { watchRosterPlayers } from './roster-firebase';
 import { loadSavingsMovements, recordSavingsMovement, watchSavings } from './savings-firebase';
 import { bindPasswordResetForm } from './password-reset-form';
@@ -236,9 +239,9 @@ function renderDebtPanel(sessions, users) {
     if (!activeUser?.admin) return '';
     const userById = new Map(users.flatMap(user => getRosterPlayerIds(user).map(id => [id, user])));
     const debts = sessions.flatMap(session => {
-        const selected = users.map(user => ({ session, user, ...resolveRosterAttendanceRecord(session.records || {}, user) }));
+        const selected = attendancePlayersForSession(session, users).map(user => ({ session, user, ...resolveRosterAttendanceRecord(session.records || {}, user) }));
         const selectedIds = new Set(selected.map(item => item.playerId));
-        const additional = Object.entries(session.records || {}).filter(([id]) => !selectedIds.has(id)).map(([playerId, record]) => ({
+        const additional = Object.entries(session.records || {}).filter(([id]) => !selectedIds.has(id) && isAttendancePlayerVisible(session, userById.get(id) || id)).map(([playerId, record]) => ({
             session, playerId, record, user: userById.get(playerId) || { name: 'Jugador fuera de la plantilla' },
             needsReview: userById.has(playerId),
         }));
@@ -246,7 +249,7 @@ function renderDebtPanel(sessions, users) {
     });
     const cards = debts.map(item => {
         const amount = esc(item.record.debtAmount || '0');
-        return `<form class="debt-item debt-update-form" data-debt-update data-session="${esc(item.session.id)}" data-player="${esc(item.playerId)}"><div><b>${esc(item.user.name)}</b><span>${esc(item.session.title || 'Entreno')} · ${esc(item.session.date)}</span>${item.needsReview ? '<small>Registro anterior de una ficha vinculada. Revisa este pago por separado.</small>' : ''}</div><label>Monto (L)<input name="amount" type="number" min="0.01" step="0.01" value="${amount}" required></label><label>Estado<select name="paymentStatus"><option value="debe" selected>Debe</option><option value="pago">Pagó</option></select></label><button class="button primary">Actualizar</button></form>`;
+        return `<form class="debt-item debt-update-form" data-debt-update data-session="${esc(item.session.id)}" data-player="${esc(item.playerId)}"><div><b>${esc(item.user.name)}</b><span>Entreno · ${esc(item.session.date)}</span>${item.needsReview ? '<small>Registro anterior de una ficha vinculada. Revisa este pago por separado.</small>' : ''}</div><label>Monto (L)<input name="amount" type="number" min="0.01" step="0.01" value="${amount}" required></label><label>Estado<select name="paymentStatus"><option value="debe" selected>Debe</option><option value="pago">Pagó</option></select></label><button class="button primary">Actualizar</button></form>`;
     }).join('');
     return `<aside class="debt-panel"><p class="eyebrow">PAGOS PENDIENTES</p><h3>Quiénes deben</h3><p class="debt-panel-copy">${activeUser?.admin ? 'Actualiza un pago aquí y se reflejará en la asistencia.' : 'Deudas registradas en los entrenos.'}</p><div class="debt-items">${cards || '<p class="empty-debts">No hay pagos pendientes. ¡Todo al día!</p>'}</div></aside>`;
 }
@@ -261,17 +264,17 @@ function renderAttendance(sessions, users) {
     }
     attendancePage = Math.max(0, Math.min(attendancePage, sessions.length - 1));
     const session = sessions[attendancePage];
-    const visibleUsers = users;
+    const visibleUsers = attendancePlayersForSession(session, users);
     const pendingCount = getPendingAttendancePlayerIds(session.records || {}, visibleUsers).length;
     const markingPending = markingPendingSession === session.id;
-    const sessionActions = activeUser?.admin ? `<div class="attendance-session-actions"><button type="button" class="attendance-icon" data-attendance-edit-session data-session="${esc(session.id)}" title="Editar nombre y fecha" aria-label="Editar nombre y fecha"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m16 3 5 5M3 21l5-1L21 7a2 2 0 0 0-5-5L3 15z" /></svg></button><button type="button" class="attendance-icon attendance-delete-session" data-attendance-delete-session data-session="${esc(session.id)}" title="Eliminar lista" aria-label="Eliminar lista"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg></button></div>` : '';
+    const sessionActions = activeUser?.admin ? `<div class="attendance-session-actions"><button type="button" class="button" data-attendance-edit-date data-session="${esc(session.id)}">Cambiar fecha</button><button type="button" class="button attendance-delete-session" data-attendance-delete-session data-session="${esc(session.id)}">Eliminar entreno</button></div>` : '';
     const attendanceActions = activeUser?.admin ? `<div class="attendance-actions"><span>${pendingCount ? `${pendingCount} ${pendingCount === 1 ? 'atleta pendiente' : 'atletas pendientes'}` : 'Sin asistencias pendientes'}</span><button type="button" class="button attendance-mark-absent" data-attendance-mark-absent data-session="${esc(session.id)}" data-pending-count="${pendingCount}" ${pendingCount === 0 || markingPending ? 'disabled' : ''} aria-busy="${markingPending}">${markingPending ? 'Guardando…' : 'Marcar pendientes como no asistió'}</button></div>` : '';
     const rows = visibleUsers.map(user => {
         const { playerId, record } = resolveRosterAttendanceRecord(session.records || {}, user); const status = record.status || '';
-        if (!activeUser?.admin) return `<tr><td>${esc(user.name)}</td><td>${({ asistio: 'Asistió', falto: 'No asistió' })[status] || 'Pendiente'}</td><td>${status === 'asistio' ? ({ pago: 'Pagó', debe: 'Debe' })[record.paymentStatus] || 'Pendiente' : '—'}</td></tr>`;
-        return `<tr data-session="${esc(session.id)}" data-player="${esc(playerId)}"><td>${esc(user.name)}</td><td><select data-attendance-status><option value="">Pendiente</option><option value="asistio" ${status === 'asistio' ? 'selected' : ''}>Asistió</option><option value="falto" ${status === 'falto' ? 'selected' : ''}>No asistió</option></select></td><td>${status === 'asistio' ? `<select data-payment-status><option value="" ${!record.paymentStatus ? 'selected' : ''}>Pendiente</option><option value="pago" ${record.paymentStatus === 'pago' ? 'selected' : ''}>Pagó</option><option value="debe" ${record.paymentStatus === 'debe' ? 'selected' : ''}>Debe</option></select>${record.paymentStatus === 'debe' ? `<small class="debt-badge">Debe: L ${esc(record.debtAmount || '0')}</small>` : ''}` : '—'}</td></tr>`;
+        if (!activeUser?.admin) return `<tr><td>${personName(user)}</td><td>${({ asistio: 'Asistió', falto: 'No asistió' })[status] || 'Pendiente'}</td><td>${status === 'asistio' ? ({ pago: 'Pagó', debe: 'Debe' })[record.paymentStatus] || 'Pendiente' : '—'}</td></tr>`;
+        return `<tr data-session="${esc(session.id)}" data-player="${esc(playerId)}"><td>${personName(user, { id: user.id, admin: true })}</td><td><select data-attendance-status><option value="">Pendiente</option><option value="asistio" ${status === 'asistio' ? 'selected' : ''}>Asistió</option><option value="falto" ${status === 'falto' ? 'selected' : ''}>No asistió</option></select></td><td>${status === 'asistio' ? `<select data-payment-status><option value="" ${!record.paymentStatus ? 'selected' : ''}>Pendiente</option><option value="pago" ${record.paymentStatus === 'pago' ? 'selected' : ''}>Pagó</option><option value="debe" ${record.paymentStatus === 'debe' ? 'selected' : ''}>Debe</option></select>${record.paymentStatus === 'debe' ? `<small class="debt-badge">Debe: L ${esc(record.debtAmount || '0')}</small>` : ''}` : '—'}</td></tr>`;
     }).join('') || '<tr><td colspan="3">El entrenador aún no ha agregado atletas a la plantilla de asistencia.</td></tr>';
-    box.innerHTML = `<div class="attendance-split ${activeUser?.admin ? '' : 'athlete-attendance'}"><article class="attendance-list"><div class="attendance-pager"><button data-attendance-prev ${attendancePage === 0 ? 'disabled' : ''}>← Más reciente</button><span>${attendancePage + 1} de ${sessions.length}</span><button data-attendance-next ${attendancePage === sessions.length - 1 ? 'disabled' : ''}>Lista anterior →</button></div><div class="attendance-session-heading">${sessionActions}<h3>${esc(session.title || 'Entreno')} · ${esc(session.date)}</h3></div>${attendanceActions}<table class="attendance-table"><thead><tr><th>Jugador</th><th>Asistencia</th><th>Pago</th></tr></thead><tbody>${rows}</tbody></table></article>${activeUser?.admin ? renderDebtPanel(sessions, users) : ''}</div>`;
+    box.innerHTML = `<div class="attendance-split ${activeUser?.admin ? '' : 'athlete-attendance'}"><article class="attendance-list"><div class="attendance-pager"><button data-attendance-prev ${attendancePage === 0 ? 'disabled' : ''}>← Más reciente</button><span>${attendancePage + 1} de ${sessions.length}</span><button data-attendance-next ${attendancePage === sessions.length - 1 ? 'disabled' : ''}>Entreno anterior →</button></div><h3>Entreno · ${esc(session.date)}</h3>${sessionActions}${attendanceActions}<table class="attendance-table"><thead><tr><th>Jugador</th><th>Asistencia</th><th>Pago</th></tr></thead><tbody>${rows}</tbody></table></article>${activeUser?.admin ? renderDebtPanel(sessions, users) : ''}</div>`;
 }
 
 async function syncPublicContent() {
@@ -637,7 +640,7 @@ q('#debt-card-form')?.addEventListener('submit', async event => {
     try { await saveAttendanceRecord(pendingDebtRecord.sessionId, pendingDebtRecord.userId, { status: 'asistio', paymentStatus: 'debe', debtAmount: amount }); event.target.reset(); closeDebtCard(); toast('Deuda registrada.'); await syncMemberContent(); } catch (error) { toast(`No fue posible guardar deuda: ${error.message}`); }
 });
 q('#attendance-session-form')?.addEventListener('submit', async event => {
-    event.preventDefault(); try { if (!activeUser?.admin) throw new Error('Solo el entrenador puede crear listas.'); const data = new FormData(event.target); await createAttendanceSession(data.get('date'), data.get('title')); event.target.reset(); toast('Lista de asistencia creada.'); await syncMemberContent(); } catch (error) { toast(`No fue posible crear: ${error.message}`); }
+    event.preventDefault(); try { if (!activeUser?.admin) throw new Error('Solo el entrenador puede crear listas.'); await createAttendanceSession(new FormData(event.target).get('date')); event.target.reset(); toast('Lista de asistencia creada.'); await syncMemberContent(); } catch (error) { toast(`No fue posible crear: ${error.message}`); }
 });
 function closeAttendanceSessionCard() {
     if (savingAttendanceSession) return;
@@ -652,7 +655,7 @@ q('#attendance-session-edit-form')?.addEventListener('submit', async event => {
     event.preventDefault();
     if (!activeUser?.admin || !attendanceSessionContext || savingAttendanceSession) return;
     const { id, action } = attendanceSessionContext;
-    const data = Object.fromEntries(new FormData(event.currentTarget));
+    const date = new FormData(event.currentTarget).get('date');
     const controls = [...event.currentTarget.elements];
     const submit = q('[data-attendance-session-save]'); const label = submit.textContent;
     savingAttendanceSession = true;
@@ -660,9 +663,9 @@ q('#attendance-session-edit-form')?.addEventListener('submit', async event => {
     let saved = false;
     try {
         if (action === 'delete') await deleteAttendanceSession(id);
-        else { attendanceFocusId = id; await updateAttendanceSessionDetails(id, data); }
+        else { attendanceFocusId = id; await updateAttendanceSessionDate(id, date); }
         saved = true;
-        toast(action === 'delete' ? 'Lista eliminada.' : 'Lista actualizada. Las asistencias y pagos se conservaron.');
+        toast(action === 'delete' ? 'Entreno eliminado.' : 'Fecha actualizada. Las asistencias y pagos se conservaron.');
     } catch (error) {
         attendanceFocusId = null;
         toast(`No fue posible guardar: ${error.message}`);
@@ -671,6 +674,23 @@ q('#attendance-session-edit-form')?.addEventListener('submit', async event => {
         controls.forEach(control => { control.disabled = false; }); submit.textContent = label;
     }
     if (saved) { closeAttendanceSessionCard(); await syncMemberContent(); }
+});
+let removingAttendancePlayer = false;
+function closeAttendancePlayerRemove() { if (!removingAttendancePlayer) q('#attendance-player-remove-modal')?.classList.remove('open'); }
+qa('[data-cancel-attendance-remove]').forEach(button => button.addEventListener('click', closeAttendancePlayerRemove));
+q('#attendance-player-remove-modal')?.addEventListener('click', event => { if (event.target === event.currentTarget) closeAttendancePlayerRemove(); });
+q('#attendance-player-remove-form')?.addEventListener('submit', async event => {
+    event.preventDefault(); if (!activeUser?.admin || removingAttendancePlayer) return;
+    const form = event.currentTarget; const data = new FormData(form);
+    const controls = [...form.elements]; removingAttendancePlayer = true;
+    controls.forEach(control => { control.disabled = true; });
+    let saved = false;
+    try {
+        await removePlayerFromAttendance(data.get('sessionId'), data.get('playerId'));
+        saved = true; toast('Jugador retirado de esta lista y de los entrenos siguientes. Su historial anterior se conserva.');
+    } catch (error) { toast(`No fue posible quitar al jugador: ${error.message}`); }
+    finally { removingAttendancePlayer = false; controls.forEach(control => { control.disabled = false; }); }
+    if (saved) { closeAttendancePlayerRemove(); await syncMemberContent(); }
 });
 q('#attendance-list')?.addEventListener('change', async event => {
     const row = event.target.closest('tr[data-session]'); if (!row || !activeUser?.admin) return; const status = row.querySelector('[data-attendance-status]')?.value || ''; const paymentStatus = row.querySelector('[data-payment-status]')?.value || '';
@@ -690,26 +710,39 @@ q('#attendance-list')?.addEventListener('submit', async event => {
 });
 q('#attendance-list')?.addEventListener('click', async event => {
     if (event.target.closest('[data-retry-member-content]')) return syncMemberContent();
-    const sessionButton = event.target.closest('[data-attendance-edit-session],[data-attendance-delete-session]');
+    const personButton = event.target.closest('[data-person-action]');
+    if (personButton) {
+        if (!activeUser?.admin) return;
+        const player = currentAttendancePlayers.find(item => item.id === personButton.dataset.personId);
+        const sessionId = personButton.closest('tr[data-session]')?.dataset.session;
+        const session = currentAttendanceSessions.find(item => item.id === sessionId);
+        if (!player || !session) return;
+        if (personButton.dataset.personAction === 'edit') return openEditor({ type: 'player', roster: true, id: player.id, name: player.name });
+        const form = q('#attendance-player-remove-form');
+        form.elements.playerId.value = player.id; form.elements.sessionId.value = session.id;
+        q('[data-attendance-remove-name]').textContent = player.name;
+        q('[data-attendance-remove-date]').textContent = session.date;
+        q('#attendance-player-remove-modal').classList.add('open');
+        q('#attendance-player-remove-form [data-cancel-attendance-remove]')?.focus();
+        return;
+    }
+    const sessionButton = event.target.closest('[data-attendance-edit-date],[data-attendance-delete-session]');
     if (sessionButton) {
         if (!activeUser?.admin || savingAttendanceSession) return;
         const session = currentAttendanceSessions.find(item => item.id === sessionButton.dataset.session);
         if (!session) return;
         const deleting = sessionButton.hasAttribute('data-attendance-delete-session');
         attendanceSessionContext = { id: session.id, action: deleting ? 'delete' : 'date' };
-        q('#attendance-session-title').textContent = deleting ? 'Eliminar lista' : 'Editar lista';
-        q('[data-attendance-session-copy]').textContent = deleting ? `Se eliminará «${session.title || 'Entreno'} · ${session.date}», con sus asistencias y pagos registrados. Esta acción no se puede deshacer. Las cuentas y la plantilla de atletas se conservan.` : 'Cambia el nombre o la fecha. Las asistencias y los pagos registrados se conservan.';
-        const name = q('#attendance-session-edit-form input[name="title"]');
-        name.value = session.title || 'Entreno'; name.required = !deleting;
-        q('[data-attendance-session-name]').hidden = deleting;
+        q('#attendance-session-title').textContent = deleting ? 'Eliminar entreno' : 'Cambiar fecha';
+        q('[data-attendance-session-copy]').textContent = deleting ? `Se eliminará el entreno del ${session.date}, con sus asistencias y pagos registrados. Esta acción no se puede deshacer. Las cuentas y la plantilla de atletas se conservan.` : 'Corrige la fecha de esta lista. Las asistencias y los pagos registrados se conservan.';
         const date = q('#attendance-session-edit-form input[name="date"]');
         date.value = session.date; date.required = !deleting;
         q('[data-attendance-session-date]').hidden = deleting;
         const submit = q('[data-attendance-session-save]');
-        submit.textContent = deleting ? 'Sí, eliminar lista' : 'Guardar cambios →';
+        submit.textContent = deleting ? 'Sí, eliminar entreno' : 'Guardar fecha →';
         submit.classList.toggle('attendance-delete-session', deleting);
         q('#attendance-session-modal').classList.add('open');
-        (deleting ? q('#attendance-session-edit-form [data-close-attendance-session]') : name).focus();
+        (deleting ? q('#attendance-session-edit-form [data-close-attendance-session]') : date).focus();
         return;
     }
     const bulkButton = event.target.closest('[data-attendance-mark-absent]');

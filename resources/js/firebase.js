@@ -3,9 +3,9 @@ import { getAuth, createUserWithEmailAndPassword, onAuthStateChanged, reload, se
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, getFirestore, onSnapshot, runTransaction, setDoc, updateDoc } from 'firebase/firestore';
 import { getDownloadURL, getStorage, ref, uploadBytes } from 'firebase/storage';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { attendanceSessionTitle, markPendingRecordsAbsent } from './attendance';
+import { markPendingRecordsAbsent } from './attendance';
 import { publicAttendanceSession } from './attendance-privacy';
-import { listManualRosterPlayers } from './roster';
+import { attendancePlayersForSession, listManualRosterPlayers } from './roster';
 import { validateCompetitionImage } from './media-validation';
 
 const firebaseConfig = {
@@ -182,7 +182,9 @@ export async function addRosterPlayer(name) {
 }
 
 export async function updateRosterPlayer(id, name) {
-    await updateDoc(doc(db, 'rosterPlayers', id), { name });
+    const cleanName = typeof name === 'string' ? name.trim() : '';
+    if (!cleanName || cleanName.length > 120) throw new Error('Escribe un nombre de entre 1 y 120 caracteres.');
+    await updateDoc(doc(db, 'rosterPlayers', id), { name: cleanName });
 }
 
 export async function deleteRosterPlayer(id) {
@@ -200,9 +202,9 @@ export function watchAttendanceSessions(callback, onError = () => {}, { admin = 
     }, onError);
 }
 
-export async function createAttendanceSession(date, title = 'Entreno') {
+export async function createAttendanceSession(date) {
     const sessionRef = doc(collection(db, 'attendance'));
-    const session = { title: attendanceSessionTitle(title), date, records: {}, createdAt: new Date().toISOString() };
+    const session = { date, records: {}, createdAt: new Date().toISOString() };
     await runTransaction(db, async transaction => {
         transaction.set(sessionRef, session);
         transaction.set(doc(db, 'attendancePublic', sessionRef.id), publicAttendanceSession(session));
@@ -215,6 +217,7 @@ export async function saveAttendanceRecord(sessionId, userId, values) {
         const snapshot = await transaction.get(sessionRef);
         if (!snapshot.exists()) throw new Error('La lista de asistencia ya no existe.');
         const session = snapshot.data();
+        if (session.excludedPlayerIds?.includes(userId)) throw new Error('El jugador ya fue retirado de esta lista.');
         const records = { ...(session.records || {}), [userId]: values };
         transaction.update(sessionRef, { records });
         transaction.set(doc(db, 'attendancePublic', sessionId), publicAttendanceSession({ ...session, records }));
@@ -229,7 +232,7 @@ export async function markPendingAttendanceAbsent(sessionId, playerIds) {
 
         // Recheck the latest records on every retry so concurrent edits are preserved.
         const session = snapshot.data();
-        const result = markPendingRecordsAbsent(session.records || {}, playerIds);
+        const result = markPendingRecordsAbsent(session.records || {}, attendancePlayersForSession(session, playerIds));
         if (result.updatedCount) {
             transaction.update(sessionRef, { records: result.records });
             transaction.set(doc(db, 'attendancePublic', sessionId), publicAttendanceSession({ ...session, records: result.records }));

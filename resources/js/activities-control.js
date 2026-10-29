@@ -58,6 +58,8 @@ export function createActivityControl(root, { toast }) {
     }
     root.addEventListener('click', event => {
         if (event.target.closest('[data-activity-close]') || event.target === modal) { close(); return; }
+        const personButton = event.target.closest('[data-person-action]');
+        if (personButton && !busy) { open(personButton.dataset.personAction === 'edit' ? 'edit-person' : 'delete-person', personButton.dataset.personId); return; }
         const button = event.target.closest('[data-activity-action]');
         if (!button || busy || button.disabled) return;
         const action = button.dataset.activityAction;

@@ -27,6 +27,7 @@ test('athletes see the delivery statuses without edit controls or payment select
 test('the coach gets editor icons, manual add and per-person payment controls; names are escaped', () => {
     const markup = activityView({ title: '<img src=x onerror=alert(1)>', participants: { person: { name: '<script>bad</script>', detail: 'Boletos 1–10', status: 'pending' } } }, { admin: true });
     assert.match(markup, /data-activity-payment/); assert.match(markup, /data-activity-action="add-person"/);
-    assert.match(markup, /data-activity-action="edit-person"/); assert.match(markup, /data-activity-action="delete-person"/);
+    assert.match(markup, /data-person-action="edit"/); assert.match(markup, /data-person-action="remove"/);
+    assert.ok(markup.indexOf('data-person-action="edit"') < markup.indexOf('<strong>&lt;script&gt;bad&lt;/script&gt;</strong>'));
     assert.match(markup, /Boletos 1–10/); assert.doesNotMatch(markup, /<script>|<img/);
 });

@@ -1,5 +1,6 @@
 export function publicAttendanceSession(session) {
-    const records = Object.fromEntries(Object.entries(session.records || {}).map(([playerId, record]) => {
+    const excludedPlayerIds = Array.isArray(session.excludedPlayerIds) ? session.excludedPlayerIds.filter(id => typeof id === 'string') : [];
+    const records = Object.fromEntries(Object.entries(session.records || {}).filter(([id]) => !excludedPlayerIds.includes(id)).map(([playerId, record]) => {
         const status = ['asistio', 'falto'].includes(record?.status) ? record.status : '';
         return [playerId, {
             status,
@@ -7,5 +8,5 @@ export function publicAttendanceSession(session) {
         }];
     }));
 
-    return { date: session.date || '', createdAt: session.createdAt || '', ...(typeof session.title === 'string' && session.title.trim() ? { title: session.title.trim() } : {}), records };
+    return { date: session.date || '', createdAt: session.createdAt || '', ...(excludedPlayerIds.length ? { excludedPlayerIds } : {}), records };
 }
